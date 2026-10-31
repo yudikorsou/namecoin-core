@@ -61,7 +61,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: digest-${{ matrix.image }}-${{ steps.n.outputs.arch }}
+          name: digests--${{ matrix.image }}--${{ steps.n.outputs.arch }}
           path: /tmp/digests/*
           retention-days: 1
 
@@ -69,6 +69,7 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         include:
           - { image: namecoin-core,    tag: "31.1" }
@@ -76,7 +77,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: digest-${{ matrix.image }}-*
+          pattern: digests--${{ matrix.image }}--*
           path: /tmp/digests
           merge-multiple: false
 
@@ -94,5 +95,10 @@ jobs:
           repo="ghcr.io/${owner}/${{ matrix.image }}"
           refs=""
           for f in /tmp/digests/*/*; do refs="$refs ${repo}@$(cat "$f")"; done
-          docker buildx imagetools create -t "${repo}:${{ matrix.tag }}" -t "${repo}:latest" $refs
+          echo "::notice::${repo} <- ${refs}"
+          if ! out=$(docker buildx imagetools create -t "${repo}:${{ matrix.tag }}" -t "${repo}:latest" $refs 2>&1); then
+            echo "$out"
+            echo "::error::imagetools create failed: $(echo "$out" | tail -3 | tr '\n' ' ')"
+            exit 1
+          fi
           docker buildx imagetools inspect "${repo}:${{ matrix.tag }}"
