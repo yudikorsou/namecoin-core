@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Namecoin Core</title>
+<link rel="icon" href="logo.svg">
+<style>
+  :root {
+    --nmc: #6787b7; --nmc-deep: #3d5f91;
+    --bg: #f4f6fa; --card: #ffffff; --ink: #18202c; --muted: #66707f; --line: #e3e7ee;
+    --ok: #2f9e6b; --warn: #c98a1b; --bad: #c4453c;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141b; --card: #171e28; --ink: #e8edf4; --muted: #8d98a8; --line: #253040; --nmc-deep: #9ab3da; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 16px 48px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  header img { width: 46px; height: 46px; }
+  header h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  .pill { margin-left: auto; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--line); color: var(--muted); white-space: nowrap; }
+  .pill.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+  .pill.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .pill.bad { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .sync h2, .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .sync .big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .sync .big small { font-size: 16px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 12px 0 8px; }
+  .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--nmc), var(--nmc-deep)); transition: width .6s ease; }
+  .meta { color: var(--muted); font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0; }
+  .stat .k { color: var(--muted); font-size: 12px; }
+  .stat .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .two { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; }
+
+  label { font-size: 12px; color: var(--muted); }
+  .row { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; font: 14px var(--mono); padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  input:focus { outline: 2px solid var(--nmc); outline-offset: -1px; }
+  button { font: 600 13px system-ui, sans-serif; padding: 9px 14px; border-radius: 9px; border: 0; background: var(--nmc); color: #fff; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--nmc-deep); border: 1px solid var(--line); }
+  button:hover { filter: brightness(1.06); }
+  pre { font: 12.5px/1.5 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; overflow: auto; white-space: pre-wrap; word-break: break-all; margin: 10px 0 0; max-height: 260px; }
+  .kv { display: grid; grid-template-columns: 110px 1fr auto; gap: 6px 10px; align-items: center; font-size: 13.5px; }
+  .kv code { font: 13px var(--mono); word-break: break-all; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; }
+  tr:last-child td { border-bottom: 0; }
+  .peers { margin-top: 12px; max-height: 320px; overflow: auto; }
+  .err { color: var(--bad); }
+  @media (max-width: 820px) { .grid { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .sync .big { font-size: 32px; } .kv { grid-template-columns: 72px minmax(0,1fr) auto; } .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="logo.svg" alt="">
+    <div>
+      <h1>Namecoin Core</h1>
+      <div class="sub" id="version">Connecting to your node…</div>
+    </div>
+    <span class="pill" id="state">Starting</span>
+  </header>
+
+  <section class="card sync">
+    <h2>Blockchain</h2>
+    <div class="big" id="height">—<small id="of"></small></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="meta" id="syncmeta">Waiting for namecoind…</div>
+  </section>
+
+  <div class="grid">
+    <div class="card stat"><div class="k">Peers</div><div class="v" id="peers">—</div></div>
+    <div class="card stat"><div class="k">Mempool</div><div class="v" id="mempool">—</div></div>
+    <div class="card stat"><div class="k">Size on disk</div><div class="v" id="disk">—</div></div>
+    <div class="card stat"><div class="k">Uptime</div><div class="v" id="uptime">—</div></div>
+  </div>
+
+  <div class="two">
+    <section class="card">
+      <h2>Look up a name</h2>
+      <form id="nameform" class="row">
+        <input id="name" placeholder="d/example  ·  id/alice" autocomplete="off" spellcheck="false">
+        <button type="submit">Look up</button>
+      </form>
+      <div id="nameout"></div>
+      <div class="hint">Names resolve against your own fully validated chain, so results are trustworthy once the node is synced.</div>
+    </section>
+
+    <section class="card">
+      <h2>Connect apps &amp; wallets</h2>
+      <div class="kv">
+        <span>RPC host</span><code id="rpchost">—</code><span></span>
+        <span>RPC port</span><code>8336</code><span></span>
+        <span>RPC user</span><code id="rpcuser">—</code><span></span>
+        <span>RPC pass</span><code id="rpcpass">••••••••••••</code><button class="ghost" id="reveal" type="button">Show</button>
+        <span>P2P port</span><code>8334</code><span></span>
+      </div>
+      <div class="hint">RPC is open to your local network only (e.g. for ncdns or a block explorer). Keep the password private.</div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:12px">
+    <h2>Connected peers</h2>
+    <div class="peers">
+      <table>
+        <thead><tr><th>Address</th><th class="hide-sm">Client</th><th>Dir</th><th>Height</th><th class="hide-sm">Ping</th></tr></thead>
+        <tbody id="peerrows"><tr><td colspan="5" style="color:var(--muted);font-family:inherit">No peers yet</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString();
+const bytes = (b) => { const u = ['B','KB','MB','GB','TB']; let i = 0; while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; } return `${b.toFixed(i ? 1 : 0)} ${u[i]}`; };
+const dur = (s) => { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+$('rpchost').textContent = location.hostname || 'umbrel.local';
+
+function setState(text, cls) { const p = $('state'); p.textContent = text; p.className = 'pill ' + (cls || ''); }
+
+async function refresh() {
+  try {
+    const r = await fetch('api/status', { cache: 'no-store' });
+    const s = await r.json();
+    if (!r.ok) { setState(s.starting ? 'Starting' : 'Error', s.starting ? 'warn' : 'bad'); $('syncmeta').textContent = s.error; return; }
+    const pct = Math.min(100, s.progress * 100);
+    const synced = !s.ibd && s.blocks >= s.headers - 1;
+    setState(synced ? 'Synced' : `Syncing ${pct.toFixed(2)}%`, synced ? 'ok' : 'warn');
+    $('version').textContent = `${s.version.replace(/^Namecoin Core /, 'v')} · ${s.chain === 'main' ? 'mainnet' : s.chain}`;
+    $('height').firstChild.nodeValue = fmt(s.blocks);
+    $('of').textContent = s.headers > s.blocks ? `/ ${fmt(s.headers)} headers` : 'blocks';
+    $('bar').style.width = pct + '%';
+    $('syncmeta').textContent = `${pct.toFixed(2)}% verified · last block ${new Date(s.time * 1000).toLocaleString()}` + (s.warnings && String(s.warnings).trim() ? ` · ${s.warnings}` : '');
+    $('peers').textContent = `${s.connections}`;
+    $('peers').title = `${s.connectionsIn} in / ${s.connectionsOut} out`;
+    $('mempool').textContent = `${fmt(s.mempoolTx)} tx`;
+    $('disk').textContent = bytes(s.sizeOnDisk);
+    $('uptime').textContent = dur(s.uptime);
+    $('peerrows').innerHTML = s.peers.length ? s.peers.map((p) =>
+      `<tr><td>${esc(p.addr)}</td><td class="hide-sm">${esc(p.subver)}</td><td>${p.inbound ? 'in' : 'out'}</td><td>${p.height >= 0 ? fmt(p.height) : '—'}</td><td class="hide-sm">${p.ping ? Math.round(p.ping * 1000) + ' ms' : '—'}</td></tr>`).join('')
+      : '<tr><td colspan="5" style="color:var(--muted);font-family:inherit">No peers yet</td></tr>';
+  } catch (e) { setState('Offline', 'bad'); $('syncmeta').textContent = 'Dashboard cannot reach the server.'; }
+}
+
+$('nameform').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const out = $('nameout');
+  const name = $('name').value.trim();
+  if (!name) return;
+  out.innerHTML = '<div class="hint">Looking up…</div>';
+  try {
+    const r = await fetch('api/name?name=' + encodeURIComponent(name));
+    const j = await r.json();
+    if (!r.ok) { out.innerHTML = j.starting ? `<div class="hint" style="margin-top:10px">${esc(j.error)}</div>` : `<pre class="err">${esc(j.error)}</pre>`; return; }
+    if (!j.found) { out.innerHTML = `<pre>${esc(j.name)} is not registered (or not seen yet — is the node synced?)</pre>`; return; }
+    let val = j.value; try { val = JSON.stringify(JSON.parse(j.value), null, 2); } catch (_) {}
+    out.innerHTML = `<pre>${esc(j.name)}\n\nexpires in: ${fmt(j.expiresIn)} blocks${j.expired ? ' (EXPIRED)' : ''}\nupdated at: block ${fmt(j.height)}\nowner:      ${esc(j.address)}\n\n${esc(val)}</pre>`;
+  } catch (e) { out.innerHTML = `<pre class="err">${esc(e.message)}</pre>`; }
+});
+
+let creds = null;
+$('reveal').addEventListener('click', async () => {
+  if (creds) { creds = null; $('rpcpass').textContent = '••••••••••••'; $('reveal').textContent = 'Show'; return; }
+  const r = await fetch('api/credentials', { cache: 'no-store' });
+  if (!r.ok) return;
+  creds = await r.json();
+  $('rpcpass').textContent = creds.password;
+  $('reveal').textContent = 'Hide';
+});
+fetch('api/credentials', { cache: 'no-store' }).then((r) => r.ok && r.json()).then((c) => { if (c) $('rpcuser').textContent = c.user; }).catch(() => {});
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

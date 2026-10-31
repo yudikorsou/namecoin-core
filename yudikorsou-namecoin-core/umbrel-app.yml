@@ -1,0 +1,38 @@
+manifestVersion: 1
+id: yudikorsou-namecoin-core
+category: bitcoin
+name: Namecoin Core
+version: "31.1"
+tagline: Run a full Namecoin node for .bit domains and decentralized names
+icon: https://raw.githubusercontent.com/yudikorsou/namecoin-core/main/yudikorsou-namecoin-core/icon.svg
+description: >-
+  Namecoin was the first fork of Bitcoin and is a decentralized key/value
+  registry built on Bitcoin's codebase. It powers censorship-resistant .bit
+  domains (d/ namespace) and identities (id/ namespace), and is merge-mined
+  with Bitcoin, so it is secured by Bitcoin hashrate.
+
+
+  This app runs Namecoin Core, built from the official signed release of
+  github.com/namecoin/namecoin-core, as a fully validating node on your Umbrel.
+  A simple dashboard shows sync progress, peers and mempool, lets you look up
+  any Namecoin name against your own chain, and gives you the RPC details to
+  connect other software such as ncdns or a block explorer on your local
+  network.
+
+
+  Initial sync downloads and verifies the full Namecoin blockchain, which takes
+  a few hours and several gigabytes of storage.
+releaseNotes: >-
+  Namecoin Core 31.1, based on Bitcoin Core 31.1.
+developer: Namecoin
+website: https://www.namecoin.org
+dependencies: []
+repo: https://github.com/namecoin/namecoin-core
+support: https://github.com/namecoin/namecoin-core/issues
+port: 8339
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: yudikorsou
+submission: https://github.com/yudikorsou/namecoin-core
